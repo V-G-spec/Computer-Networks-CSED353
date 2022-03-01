@@ -17,14 +17,14 @@ class ByteStream {
     // that's a sign that you probably want to keep exploring
     // different approaches.
 
-    bool _error= 0;  //!< Flag indicating that the stream suffered an error.
+    bool _error= false;  //!< Flag indicating that the stream suffered an error.
    // Setting variable names in correspondance with function names in .cc file
-    size_t _capacity=0;
+    size_t _capacity;
     size_t _buffer_size=0;
     size_t _bytes_written=0;
     size_t _bytes_read=0;
-    bool _ended_ip = 0;
-    std::list<char> _stream;
+    bool _ended_ip = false;
+    std::list<char> _stream{};
 
   public:
     //! Construct a stream with room for `capacity` bytes.

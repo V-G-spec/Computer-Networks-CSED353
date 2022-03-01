@@ -1,5 +1,5 @@
 #include "byte_stream.hh"
-
+#include <iterator>
 // Dummy implementation of a flow-controlled in-memory byte stream.
 
 // For Lab 0, please replace with a real implementation that passes the
@@ -16,7 +16,7 @@ ByteStream::ByteStream(const size_t capacity) { _capacity(capacity); }
 
 size_t ByteStream::write(const string &data) {
     size_t count = 0;
-    for (char b: data){
+    for (const char b: data){
 	if (_buffer_size>=_capacity){
 	    break;
 	}
@@ -36,10 +36,14 @@ string ByteStream::peek_output(const size_t len) const {
     } else {
 	to_peek=_buffer_size;
     }
-    string return_str = "";
-    for (size_t i=0; i<to_peek; i++){
-	return_str+=_stream[i];
-    }
+    string return_str;
+    //for (size_t i=0; i<to_peek; i++){
+//	return_str+=_stream[i];
+  //  }
+    // Taken a little help from stackoverflow for getting sub-list from list stl
+    auto l_front = _stream.begin();
+    advance(l_front, to_peek);
+    return_str = string(_stream.begin(), l_front);
     return return_str;
 }
 
@@ -67,13 +71,13 @@ std::string ByteStream::read(const size_t len) {
     return retStr;
 }
 
-void ByteStream::end_input() {_ended_ip = 1}
+void ByteStream::end_input() {_ended_ip = true;}
 
 bool ByteStream::input_ended() const { return _ended_ip; }
 
 size_t ByteStream::buffer_size() const { return _buffer_size; }
 
-bool ByteStream::buffer_empty() const { return (_buffer_size==0); }
+bool ByteStream::buffer_empty() const { return (_stream.size()==0); }
 
 bool ByteStream::eof() const {
     if (input_ended() && buffer_empty()){
@@ -85,4 +89,4 @@ size_t ByteStream::bytes_written() const { return _bytes_written; }
 
 size_t ByteStream::bytes_read() const { return _bytes_read; }
 
-size_t ByteStream::remaining_capacity() const { return abs(_capacity-_buffer_size); }
+size_t ByteStream::remaining_capacity() const { return _capacity-_buffer_size; }
