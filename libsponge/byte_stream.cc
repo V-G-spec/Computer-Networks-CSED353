@@ -31,10 +31,10 @@ size_t ByteStream::write(const string &data) {
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
     size_t to_peek;
-    if (len<buffer_size){
+    if (len<_buffer_size){
 	to_peek=len;
     } else {
-	to_peek=buffer_size;
+	to_peek=_buffer_size;
     }
     string return_str = "";
     for (size_t i=0; i<to_peek; i++){
@@ -49,7 +49,7 @@ void ByteStream::pop_output(const size_t len) {
     if (len<_buffer_size){
 	to_pop = len;
     } else {
-	to_pop = buffer_size;
+	to_pop = _buffer_size;
     }
     while(to_pop--){
 	_bytes_read +=1;
