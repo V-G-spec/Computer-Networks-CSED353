@@ -12,48 +12,54 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-ByteStream::ByteStream(const size_t capacity) { _capacity(capacity); }
+//ByteStream::ByteStream(const size_t capacity): _error(false), _capacity(capacity), _buffer_size(0), _bytes_written(0), _bytes_read(0), _input_ended(false) {}
+ByteStream::ByteStream(const size_t capacity) {_capacity=capacity;}
 
 size_t ByteStream::write(const string &data) {
     size_t count = 0;
-    for (const char b: data){
-	if (_buffer_size>=_capacity){
+    for (char b: data){
+	if (_capacity<=_buffer_size){
 	    break;
+	} else {
+	    _buffer_size+=1;
+	    _bytes_written+=1;
+	    count+=1;
+	    _stream.push_back(b);
 	}
+    }
+    /*size_t to_write = min(data.length(), _capacity-_buffer_size);
+    for(size_t i=0; i<to_write; i++){
 	_buffer_size+=1;
 	_bytes_written+=1;
 	count+=1;
-	_stream.push_back(b);
-    }
+	_stream.push_back(data[i]);
+    }*/
     return count;
 }
 
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
-    size_t to_peek;
-    if (len<_buffer_size){
-	to_peek=len;
-    } else {
-	to_peek=_buffer_size;
-    }
-    string return_str;
+    size_t to_peek = min(len, _buffer_size);
+    //string return_str;
     //for (size_t i=0; i<to_peek; i++){
 //	return_str+=_stream[i];
   //  }
     // Taken a little help from stackoverflow for getting sub-list from list stl
-    auto l_front = _stream.begin();
+    list<char>::const_iterator l_front = _stream.begin();
     advance(l_front, to_peek);
-    return_str = string(_stream.begin(), l_front);
+    string return_str = string(_stream.begin(), l_front);
     return return_str;
 }
 
 //! \param[in] len bytes will be removed from the output side of the buffer
 void ByteStream::pop_output(const size_t len) {
     size_t to_pop;
-    if (len<_buffer_size){
+    if (len<=_buffer_size){
 	to_pop = len;
     } else {
-	to_pop = _buffer_size;
+	set_error();
+	return;
+	//to_pop = _buffer_size;
     }
     while(to_pop--){
 	_bytes_read +=1;
@@ -66,23 +72,29 @@ void ByteStream::pop_output(const size_t len) {
 //! \param[in] len bytes will be popped and returned
 //! \returns a string
 std::string ByteStream::read(const size_t len) {
+    string tmp = "";
+    if (len>_buffer_size) {
+	set_error();
+	return tmp;
+    }
     const string retStr = peek_output(len);
     pop_output(len);
     return retStr;
 }
 
-void ByteStream::end_input() {_ended_ip = true;}
+void ByteStream::end_input() {_input_ended = true;}
 
-bool ByteStream::input_ended() const { return _ended_ip; }
+bool ByteStream::input_ended() const { return _input_ended; }
 
 size_t ByteStream::buffer_size() const { return _buffer_size; }
 
-bool ByteStream::buffer_empty() const { return (_stream.size()==0); }
+bool ByteStream::buffer_empty() const { return (_buffer_size==0); }
 
 bool ByteStream::eof() const {
-    if (input_ended() && buffer_empty()){
-	return true;
-    } else {return false;}
+    return ((_buffer_size==0)&&_input_ended);
+    //if (input_ended() && buffer_empty()){
+//	return true;
+  //  } else {return false;}
 }
 
 size_t ByteStream::bytes_written() const { return _bytes_written; }
