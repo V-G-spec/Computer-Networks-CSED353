@@ -12,21 +12,21 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-//ByteStream::ByteStream(const size_t capacity): _error(false), _capacity(capacity), _buffer_size(0), _bytes_written(0), _bytes_read(0), _input_ended(false) {}
-ByteStream::ByteStream(const size_t capacity) {_capacity=capacity;}
+ByteStream::ByteStream(const size_t capacity): _error(false), _capacity(capacity), _buffer_size(0), _bytes_written(0), _bytes_read(0), _input_ended(0), _stream() {}
+//ByteStream::ByteStream(const size_t capacity): _capacity=capacity {}
 
 size_t ByteStream::write(const string &data) {
-    size_t count = 0;
-    for (char b: data){
-	if (_capacity<=_buffer_size){
-	    break;
-	} else {
-	    _buffer_size+=1;
-	    _bytes_written+=1;
-	    count+=1;
+    size_t countr = 0;
+    for (size_t i=0; i<data.length(); i++){
+	const char b=data[i];
+	if (_capacity>_buffer_size) {
+	    ++_buffer_size;
+	    ++_bytes_written;
+	    ++countr;
 	    _stream.push_back(b);
-	}
+	} else return countr;
     }
+    //return 3;
     /*size_t to_write = min(data.length(), _capacity-_buffer_size);
     for(size_t i=0; i<to_write; i++){
 	_buffer_size+=1;
@@ -34,7 +34,7 @@ size_t ByteStream::write(const string &data) {
 	count+=1;
 	_stream.push_back(data[i]);
     }*/
-    return count;
+    return countr;
 }
 
 //! \param[in] len bytes will be copied from the output side of the buffer
@@ -62,8 +62,8 @@ void ByteStream::pop_output(const size_t len) {
 	//to_pop = _buffer_size;
     }
     while(to_pop--){
-	_bytes_read +=1;
-	_buffer_size -=1;
+	_bytes_read++;
+	_buffer_size--;
 	_stream.pop_front();
     }
 }
@@ -91,7 +91,7 @@ size_t ByteStream::buffer_size() const { return _buffer_size; }
 bool ByteStream::buffer_empty() const { return (_buffer_size==0); }
 
 bool ByteStream::eof() const {
-    return ((_buffer_size==0)&&_input_ended);
+    return ((_buffer_size==0) && _input_ended);
     //if (input_ended() && buffer_empty()){
 //	return true;
   //  } else {return false;}

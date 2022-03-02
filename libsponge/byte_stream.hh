@@ -2,7 +2,7 @@
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
 
 #include <string>
-
+#include <list>
 //! \brief An in-order byte stream.
 
 //! Bytes are written on the "input" side and read from the "output"
@@ -19,12 +19,12 @@ class ByteStream {
 
     bool _error{};  //!< Flag indicating that the stream suffered an error.
    // Setting variable names in correspondance with function names in .cc file
-    size_t _capacity=0;
-    size_t _buffer_size=0;
-    size_t _bytes_written=0;
-    size_t _bytes_read=0;
-    bool _input_ended=false;
-    std::list<char> _stream{};
+    size_t _capacity;
+    size_t _buffer_size;
+    size_t _bytes_written;
+    size_t _bytes_read;
+    bool _input_ended;
+    std::list<char> _stream;
 
   public:
     //! Construct a stream with room for `capacity` bytes.
