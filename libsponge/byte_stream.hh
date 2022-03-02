@@ -1,8 +1,8 @@
 #ifndef SPONGE_LIBSPONGE_BYTE_STREAM_HH
 #define SPONGE_LIBSPONGE_BYTE_STREAM_HH
 
-#include <string>
 #include <list>
+#include <string>
 //! \brief An in-order byte stream.
 
 //! Bytes are written on the "input" side and read from the "output"
@@ -18,7 +18,7 @@ class ByteStream {
     // different approaches.
 
     bool _error{};  //!< Flag indicating that the stream suffered an error.
-   // Setting variable names in correspondance with function names in .cc file
+                    // Setting variable names in correspondance with function names in .cc file
     size_t _capacity;
     size_t _buffer_size;
     size_t _bytes_written;

@@ -13,17 +13,17 @@ void get_URL(const string &host, const string &path) {
     // You will need to connect to the "http" service on
     // the computer whose name is in the "host" string,
     // then request the URL path given in the "path" string.
-    s1.write("GET "+path+" HTTP/1.1\r\n"+"Host: "+host+"\r\n"+"Connection: close \r\n\n");
+    s1.write("GET " + path + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close \r\n\n");
     // Then you'll need to print out everything the server sends back,
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
-    while(s1.eof()==false){
-	cout<<s1.read();
+    while (s1.eof() == false) {
+        cout << s1.read();
     }
     s1.close();
 
-    //cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
-    //cerr << "Warning: get_URL() has not been implemented yet.\n";
+    // cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
+    // cerr << "Warning: get_URL() has not been implemented yet.\n";
 }
 
 int main(int argc, char *argv[]) {
