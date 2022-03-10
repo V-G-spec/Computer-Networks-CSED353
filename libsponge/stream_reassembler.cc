@@ -12,7 +12,7 @@ void DUMMY_CODE(Targs &&... /* unused */) {}
 
 using namespace std;
 
-StreamReassembler::StreamReassembler(const size_t capacity) : _eof(false), _unass_bytes(0), _ack_index(0), _trackmap(capacity, false), _buffer(capacity), _output(capacity), _capacity(capacity) {}
+StreamReassembler::StreamReassembler(const size_t capacity) : _eof(false), _unass_bytes(0), _base_index(0), _trackmap(capacity, false), _buffer(capacity), _output(capacity), _capacity(capacity) {}
 
 //! \details This function accepts a substring (aka a segment) of bytes,
 //! possibly out-of-order, from the logical stream, and assembles any newly
@@ -26,18 +26,36 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     }
 
     //Ignoring invalid idx
-    if (index >= _unass_bytes + _capacity) {
+    if (index >= _base_index + _capacity) {
 	return;
     }
-    //
-    else if (index >= _unass_bytes) {
-	...
+    // Case 2 from reg
+    else if (index >= _base_index) { //Not yet sure about >= or >
+	gap = index - _base_index;
+	to_fill = min(tmplen, _capacity - gap - _output.buffer_size());
+	if (to_fill!=tmplen) _eof = false;
+	//_unass_bytes += to_fill;
+	for(size_t i=gap; i<to_fill+gap; i++){
+	    if(trackmap[i]==true) continue;
+	    buffer[i] = data[i-gap];
+	    trackmap[i] = true;
+	    ++_unass_bytes;
+	}
     }
-    //
-    else if (index+tmplen > _unass_bytes){
-	...
+    // Case 3 from reg
+    else if (index+tmplen > _base_index){
+	gap = _base_index - index;
+	tofill = min(index+tmplen - _base_index, _capacity - _output.buffer_size());
+	if (tofill != index+tmplen - _base_index) _eof=false;
+	//_unass_bytes+=to_fill;
+	for (size_t i =0; i<tofill; i++) {
+	    if (trackmap[i]==true) continue;
+	    buffer[i] = data[i+gap];
+	    trackmap[i] = true;
+	    ++_unass_bytes;
+	}
     }
-    defragment();
+    defragment(); //Make stuff contiguous after checking
     if (eof==true && _unass_bytes==0) {
 	_eof = eof;
 	_output.input_ended();
