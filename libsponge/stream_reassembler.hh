@@ -12,10 +12,11 @@
 class StreamReassembler {
   private:
     // Writing var names as asked in .cc file
+    // Realized that I kept some names after reading cs144 repo which had some functions which are probably from later assignments
     // Your code here -- add private members as necessary.
     bool _eof; //Reqd in one of the functions. Might delete it if unnecessary
     size_t _unass_bytes //Unassembled bytes
-    size_t _ack_idx; //Need to store the base index
+    size_t _base_idx; //Need to store the base index
     std::list<bool> trackmap; 
     std::list<char> buffer;
     ByteStream _output;  //!< The reassembled in-order byte stream 
