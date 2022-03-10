@@ -1,3 +1,4 @@
+
 #ifndef SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
 #define SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
 
@@ -5,14 +6,19 @@
 
 #include <cstdint>
 #include <string>
-
+#include <list>
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
   private:
+    // Writing var names as asked in .cc file
     // Your code here -- add private members as necessary.
-
-    ByteStream _output;  //!< The reassembled in-order byte stream
+    bool _eof; //Reqd in one of the functions. Might delete it if unnecessary
+    size_t _unass_bytes //Unassembled bytes
+    size_t _ack_idx; //Need to store the base index
+    std::list<bool> trackmap; 
+    std::list<char> buffer;
+    ByteStream _output;  //!< The reassembled in-order byte stream 
     size_t _capacity;    //!< The maximum number of bytes
 
   public:
