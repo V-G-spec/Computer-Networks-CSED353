@@ -13,17 +13,20 @@
 class StreamReassembler {
   private:
     // Writing var names as asked in .cc file
-    // Realized that I kept some names after reading cs144 repo which had some functions which are probably from later assignments
-    // Your code here -- add private members as necessary.
-    bool _eof; //Reqd in one of the functions. Might delete it if unnecessary
-    size_t eof_idx; //Keep track of eof idx. If we reach that in the defragment function, _eof becomes true
-    size_t _unass_bytes; //Unassembled bytes
-    size_t _base_index; //Need to store the base index
-    std::deque<bool> _trackmap;  //Trackmap helps us to correspond bits in cases when they are not contiguous. It moves parallely with buffer
+    // Realized that I kept some names after reading cs144 repo which had some functions which are probably from later
+    // assignments Your code here -- add private members as necessary.
+    bool _eof;  // Reqd in one of the functions. Might delete it if unnecessary
+    // size_t eof_idx;       // Keep track of eof idx. If we reach that in the defragment function, _eof becomes true
+    size_t _unass_bytes;         // Unassembled bytes
+    size_t _base_index;          // Need to store the base index
+    std::deque<bool> _trackmap;  // Trackmap helps us to correspond bits in cases when they are not contiguous. It moves
+                                 // parallely with buffer
     std::deque<char> _buffer;
-    ByteStream _output;  //!< The reassembled in-order byte stream 
+    ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
-    void defragment(const size_t index);
+                         //    void defragment(const size_t index);
+    void defragment();
+
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
