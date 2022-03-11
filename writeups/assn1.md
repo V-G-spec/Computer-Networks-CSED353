@@ -25,7 +25,7 @@ In the beginning, the cases were ovewhelming, which is when I decided to resort 
 I mostly tested my code using the given tests as I am not sure how to run my own. For debugging, I took help from stackoverflow to understand what that error meant and then read my code several times to make required changes. Other than the eof error, I only ran into syntax errors which are relatively easier to solve
 
 ### Remaining Bugs:  
-As mentioned in most recent commit, some of the eof are not working. Looking at the error logs, it seems my code is unable to handle the case where eof was 1 at one of the earlier inputs.  
+There are no remaining bugs to the best of my knowledge. However, there can be some issues that may arise later because of all the initial code I edited while debugging (Note to self: Learn how to use a debugger). I can fix them later with upcoming assignments
 
 ##### - Optional: I had unexpected difficulty with: merging updates with pvt repo
 
