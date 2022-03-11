@@ -6,6 +6,7 @@
 // automated checks run by `make check_lab1`.
 
 // You will need to add private members to the class declaration in `stream_reassembler.hh`
+using namespace std;
 
 template <typename... Targs>
 void DUMMY_CODE(Targs &&... /* unused */) {}
@@ -18,33 +19,34 @@ StreamReassembler::StreamReassembler(const size_t capacity) : _eof(false), _unas
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
     size_t tmplen = data.length();
-    if (eof==true && tmplen==0 && _unass_bytes==0) {
-	_eof=true;
+    if (eof==1 && tmplen==0 && _unass_bytes==0) {
+	_eof=1;
 	_output.end_input();
 	return;
     }
-    if (eof==true){
-	_eof = true;
+    if (eof){
+	_eof = 1;
+	eof_idx = index;
     }
 
-    //Ignoring invalid idx
+    //Ignoring invalid idx (Case 1)
     if (index >= _base_index + _capacity) {
 	return;
     }
-    // Case 2 from reg
+    // Case 2 when offset will be positive
     if (index >= _base_index) { //Not yet sure about >= or >
 	size_t gap = index - _base_index;
-	size_t to_fill = min(tmplen, _capacity - gap - _output.buffer_size());
-	if (to_fill!=tmplen) _eof = false;
+	size_t to_fill = min(tmplen, _capacity - gap - _output.buffer_size()); //How many times we will read data
+	if (to_fill!=tmplen) _eof = 0;
 	//_unass_bytes += to_fill;
-	for(size_t i=gap; i<to_fill+gap; i++){
+	for(size_t i=gap; i<to_fill+gap; i++){ //Alternatively, can start i from 0 and do _trackmap[i+gap]
 	    if(_trackmap[i]==true) continue;
 	    _buffer[i] = data[i-gap];
 	    _trackmap[i] = true;
 	    ++_unass_bytes;
 	}
     }
-    // Case 3 from reg
+    // Case 3 from reg (Negative offset. Rest is same as case 2)
     else if (index+tmplen > _base_index){
 	size_t gap = _base_index - index;
 	size_t tofill = min(index+tmplen - _base_index, _capacity - _output.buffer_size());
@@ -57,14 +59,14 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 	    ++_unass_bytes;
 	}
     }
-    defragment(); //Make stuff contiguous after checking
-    if (_eof==true && _unass_bytes==0) {
+    defragment(); //Make stuff contiguous after checking and store it in outstream
+    if (_eof==1 && _unass_bytes==0) {
 	_output.input_ended();
     }
     return;
 }
 
-void StreamReassembler::defragment(){ //Called after processing in buffer is done. Will correspond trackmap with buffer and store stuff in output
+void StreamReassembler::defragment(const size_t index){ //Called after processing in buffer is done. Will correspond trackmap with buffer and store stuff in output
     
     string tmp = "";
     size_t tmplen = 0;
@@ -80,7 +82,7 @@ void StreamReassembler::defragment(){ //Called after processing in buffer is don
     _output.write(tmp);
     _unass_bytes-=tmplen;
     _base_index+=tmplen;
-    
+    //if (index+tmplen>=eof_idx) _eof=true;
 }
 
 size_t StreamReassembler::unassembled_bytes() const { return {_unass_bytes}; }
