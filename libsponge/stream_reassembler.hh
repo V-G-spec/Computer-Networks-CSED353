@@ -16,10 +16,10 @@ class StreamReassembler {
     // Realized that I kept some names after reading cs144 repo which had some functions which are probably from later assignments
     // Your code here -- add private members as necessary.
     bool _eof; //Reqd in one of the functions. Might delete it if unnecessary
-    size_t _unass_bytes //Unassembled bytes
-    size_t _base_idx; //Need to store the base index
-    std::vector<bool> trackmap; 
-    std::vector<char> buffer;
+    size_t _unass_bytes; //Unassembled bytes
+    size_t _base_index; //Need to store the base index
+    std::vector<bool> _trackmap; 
+    std::vector<char> _buffer;
     ByteStream _output;  //!< The reassembled in-order byte stream 
     size_t _capacity;    //!< The maximum number of bytes
 

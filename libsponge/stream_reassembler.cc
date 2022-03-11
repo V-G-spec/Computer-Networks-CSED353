@@ -36,9 +36,9 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 	if (to_fill!=tmplen) _eof = false;
 	//_unass_bytes += to_fill;
 	for(size_t i=gap; i<to_fill+gap; i++){
-	    if(trackmap[i]==true) continue;
-	    buffer[i] = data[i-gap];
-	    trackmap[i] = true;
+	    if(_trackmap[i]==true) continue;
+	    _buffer[i] = data[i-gap];
+	    _trackmap[i] = true;
 	    ++_unass_bytes;
 	}
     }
@@ -49,9 +49,9 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 	if (tofill != index+tmplen - _base_index) _eof=false;
 	//_unass_bytes+=to_fill;
 	for (size_t i =0; i<tofill; i++) {
-	    if (trackmap[i]==true) continue;
-	    buffer[i] = data[i+gap];
-	    trackmap[i] = true;
+	    if (_trackmap[i]==true) continue;
+	    _buffer[i] = data[i+gap];
+	    _trackmap[i] = true;
 	    ++_unass_bytes;
 	}
     }
@@ -67,12 +67,12 @@ void StreamReassembler::defragment(){ //Called after processing in buffer is don
     string tmp = "";
     size_t tmplen = 0;
     //DUMMY_CODE(data, index, eof);
-    while(trackmap.front()==true){
+    while(_trackmap.front()==true){
 	++tmplen;
-	trackmap.pop_front();
-	trackmap.push_back(false);
-	tmp+=buffer.pop_front();
-	buffer.push_back(' ');
+	_trackmap.pop_front();
+	_trackmap.push_back(false);
+	tmp+=_buffer.pop_front();
+	_buffer.push_back(' ');
     }
     _output.write(tmp);
     _unass_bytes-=tmplen;
