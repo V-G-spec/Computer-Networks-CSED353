@@ -17,10 +17,10 @@ class StreamReassembler {
     // assignments Your code here -- add private members as necessary.
     bool _eof;  // Reqd in one of the functions. Might delete it if unnecessary
     // size_t eof_idx;       // Keep track of eof idx. If we reach that in the defragment function, _eof becomes true
-    size_t _unass_bytes;         // Unassembled bytes
-    size_t _base_index;          // Need to store the base index
-    std::deque<bool> _trackmap;  // Trackmap helps us to correspond bits in cases when they are not contiguous. It moves
-                                 // parallely with buffer
+    size_t _unass_bytes;           // Unassembled bytes
+    size_t _base_index;            // Need to store the base index
+    std::deque<size_t> _trackmap;  // Trackmap helps us to correspond bits in cases when they are not contiguous. It
+                                   // moves parallely with buffer
     std::deque<char> _buffer;
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
