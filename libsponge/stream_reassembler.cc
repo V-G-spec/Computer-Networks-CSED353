@@ -43,8 +43,11 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     size_t tmplen = data.length();
     if (eof==true && tmplen==0 && _unass_bytes==0) {
 	_output.end_input();
-	_eof = true;
+	//_eof = true;
 	return;
+    }
+    if (eof==true){
+	_eof = true;
     }
 
     //Ignoring invalid idx
