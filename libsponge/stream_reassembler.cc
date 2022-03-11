@@ -62,6 +62,10 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     }
     return;
 
+void defragment(){ //Called after processing in buffer is done. Will correspond trackmap with buffer and store stuff in output
+    
+}
+
     //DUMMY_CODE(data, index, eof);
 }
 
