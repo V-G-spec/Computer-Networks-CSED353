@@ -6,7 +6,8 @@
 
 #include <cstdint>
 #include <string>
-#include <list>
+//#include <list>
+#include <vector>
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
@@ -17,8 +18,8 @@ class StreamReassembler {
     bool _eof; //Reqd in one of the functions. Might delete it if unnecessary
     size_t _unass_bytes //Unassembled bytes
     size_t _base_idx; //Need to store the base index
-    std::list<bool> trackmap; 
-    std::list<char> buffer;
+    std::vector<bool> trackmap; 
+    std::vector<char> buffer;
     ByteStream _output;  //!< The reassembled in-order byte stream 
     size_t _capacity;    //!< The maximum number of bytes
 
