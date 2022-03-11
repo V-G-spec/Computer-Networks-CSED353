@@ -10,30 +10,7 @@
 template <typename... Targs>
 void DUMMY_CODE(Targs &&... /* unused */) {}
 
-using namespace std;
-
 StreamReassembler::StreamReassembler(const size_t capacity) : _eof(false), _unass_bytes(0), _base_index(0), _trackmap(capacity, false), _buffer(capacity, ' '), _output(capacity), _capacity(capacity) {}
-
-
-void StreamReassembler::defragment(){ //Called after processing in buffer is done. Will correspond trackmap with buffer and store stuff in output
-    
-    string tmp = "";
-    size_t tmplen = 0;
-    //DUMMY_CODE(data, index, eof);
-    while(_trackmap.front()==true){
-	++tmplen;
-	_trackmap.pop_front();
-	_trackmap.push_back(false);
-	tmp+= _buffer.front();
-	_buffer.pop_front();
-	_buffer.push_back(' ');
-    }
-    _output.write(tmp);
-    _unass_bytes-=tmplen;
-    _base_index+=tmplen;
-    
-}
-
 
 
 //! \details This function accepts a substring (aka a segment) of bytes,
@@ -42,8 +19,8 @@ void StreamReassembler::defragment(){ //Called after processing in buffer is don
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
     size_t tmplen = data.length();
     if (eof==true && tmplen==0 && _unass_bytes==0) {
+	_eof=true;
 	_output.end_input();
-	//_eof = true;
 	return;
     }
     if (eof==true){
@@ -55,7 +32,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 	return;
     }
     // Case 2 from reg
-    else if (index >= _base_index) { //Not yet sure about >= or >
+    if (index >= _base_index) { //Not yet sure about >= or >
 	size_t gap = index - _base_index;
 	size_t to_fill = min(tmplen, _capacity - gap - _output.buffer_size());
 	if (to_fill!=tmplen) _eof = false;
@@ -81,11 +58,29 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 	}
     }
     defragment(); //Make stuff contiguous after checking
-    if (eof==true && _unass_bytes==0) {
-	_eof = eof;
+    if (_eof==true && _unass_bytes==0) {
 	_output.input_ended();
     }
     return;
+}
+
+void StreamReassembler::defragment(){ //Called after processing in buffer is done. Will correspond trackmap with buffer and store stuff in output
+    
+    string tmp = "";
+    size_t tmplen = 0;
+    //DUMMY_CODE(data, index, eof);
+    while(_trackmap.front()==true){
+	++tmplen;
+	_trackmap.pop_front();
+	_trackmap.push_back(false);
+	tmp+= _buffer.front();
+	_buffer.pop_front();
+	_buffer.push_back(' ');
+    }
+    _output.write(tmp);
+    _unass_bytes-=tmplen;
+    _base_index+=tmplen;
+    
 }
 
 size_t StreamReassembler::unassembled_bytes() const { return {_unass_bytes}; }
