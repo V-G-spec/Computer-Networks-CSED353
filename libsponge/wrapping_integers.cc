@@ -16,7 +16,7 @@ using namespace std;
 WrappingInt32 wrap(uint64_t n, WrappingInt32 isn) {
     //DUMMY_CODE(n, isn);
     //return WrappingInt32{0};
-    return WrappingInt32(isn + uint32_t(n));
+    return WrappingInt32((isn.raw_value() + uint32_t(n))%(1l<<32));
 }
 
 //! Transform a WrappingInt32 into an "absolute" 64-bit sequence number (zero-indexed)
@@ -33,7 +33,7 @@ uint64_t unwrap(WrappingInt32 n, WrappingInt32 isn, uint64_t checkpoint) {
     //DUMMY_CODE(n, isn, checkpoint);
     //if (n-isn<0) uint64_t tmp = uint64_t(n-isn+(1ull<<32)); //INT_MAX but I am not sure if we are allowed to import math
     //else uint64_t tmp = uint64_t(n-isn);
-    uint64_t tmp = n-wrap(checkpoint, isn);
+    uint64_t tmp = n.raw_value()-wrap(checkpoint, isn).raw_value();
     uint64_t absSn = tmp+checkpoint;
     if ((tmp>= (1l<<31)) && (absSn>=(1l<<32))) absSn-=1l<<32;
     return absSn;
