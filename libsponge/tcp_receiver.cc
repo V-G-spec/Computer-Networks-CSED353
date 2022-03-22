@@ -37,6 +37,12 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     if (_synRec == true)
         idx -= 1;
     _reassembler.push_substring(seg.payload().copy(), idx, _finRec);
+
+    //_reassembler.stream_out().end_input(); // One test case failed on using this. I believe this has to be handled
+    // separately which I do not have time for. Making note of it so that in future if this gets stuck, I know where to
+    // start
+    if (_reassembler.empty() == true && _finRec == true)
+        _reassembler.stream_out().end_input();
     return;
     // DUMMY_CODE(seg);
 }
