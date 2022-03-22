@@ -14,6 +14,8 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     DUMMY_CODE(seg);
 }
 
-optional<WrappingInt32> TCPReceiver::ackno() const { return {}; }
+optional<WrappingInt32> TCPReceiver::ackno() const {
+    
+}
 
 size_t TCPReceiver::window_size() const { return {}; }
