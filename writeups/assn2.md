@@ -16,7 +16,8 @@ If you used any part of best-submission codes, specify all the best-submission n
 ### Program Structure and Design of the TCPReceiver and wrap/unwrap routines:
 For the wrappingInt32, I only had to follow what was already stated in the problem statement and take care of the mod. I used left shift because it is much easier to handle and computationally inexpensive compared to computing power  
 
-For the TCPReceiver
+For the TCPReceiver, after getting the corner cases wrt SynRec and FinRec out of the way, I only had to evaluate the stream index for pushing the data into the reassembler. Everything algorithmic was already done before, so this was just following the guidelines of the writeup properly and sticking to the invariants.
+
 
 ### Implementation Challenges:
 I think as we progress in the assignments, it gets harder and harder to keep track of the different functions, variables and their purpose. So this time I found myself opening all the header files and revisiting them dozens of time while writing each function.
