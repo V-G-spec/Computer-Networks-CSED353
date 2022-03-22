@@ -15,7 +15,6 @@
 //! remote TCPSender.
 class TCPReceiver {
     
-    size_t capacity; //Max bytes
     bool _synRec=false, _finRec=false;
     WrappingInt32 _isn = WrappingInt32{0}; //Initial sequence number
     WrappingInt32 _ackno = WrappingInt32{0}; //Ackno. May or may not be useful because can be constructed later, will see
