@@ -2,6 +2,7 @@
 
 #include "tcp_config.hh"
 
+#include <iostream>
 #include <random>
 
 // Dummy implementation of a TCP sender
@@ -60,7 +61,10 @@ void TCPSender::fill_window() {
     // size_t len = max(_abseqno - _next_seqno, 0);
     if (_win_size == 0 && len == 0)
         len = 1;
-    while (len > 0) {
+    while (len > 0 && _fin == false) {
+        //	cout<<"some_loop1";
+        if (_stream.buffer_size() == 0)
+            break;
         TCPSegment seg;
         seg.header().seqno = wrap(_next_seqno, _isn);
 
@@ -71,7 +75,7 @@ void TCPSender::fill_window() {
 
         // may have to send fin
         if (_stream.eof() && _stream.buffer_empty() && len) {
-            len -= 1;
+            // len -= 1;
             seg.header().fin = _fin = true;
         }
         _next_seqno += seg.length_in_sequence_space();
@@ -93,24 +97,31 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     uint64_t abs_ackno = unwrap(ackno, _isn, _rec_ack);
     if (abs_ackno > _next_seqno)
         return;
+    if (abs_ackno == _next_seqno) {
+        if (_fin == 1) {
+            _in_flight = 0;
+            _win_size = 0;
+            while (_wait_seg.empty() == false)
+                _wait_seg.pop();
+            return;
+        }
+    }
     _win_size = window_size;
     // if (_fin==true &&
     if (abs_ackno <= _rec_ack)
         return;
-    else {
-        _rec_ack = abs_ackno;
-        _RTO = _initial_retransmission_timeout;
-        _cons_retrans = 0;
-        _in_flight -= (abs_ackno - _abseqno);
-        while ((_wait_seg.empty() == false) &&
-               (ackno.raw_value() >=
-                _wait_seg.front().length_in_sequence_space() + _wait_seg.front().header().seqno.raw_value())) {
-            _wait_seg.pop();
-        }
-        if (_wait_seg.empty())
-            _alarm.stop();
-        _abseqno = max(_abseqno, abs_ackno + _win_size);
+    _rec_ack = abs_ackno;
+    _RTO = _initial_retransmission_timeout;
+    _cons_retrans = 0;
+    _in_flight -= (abs_ackno - _abseqno);
+    while ((_wait_seg.empty() == false) && (ackno.raw_value() >= _wait_seg.front().length_in_sequence_space() +
+                                                                     _wait_seg.front().header().seqno.raw_value())) {
+        _wait_seg.pop();
+        //      cout<<"some_loop2";
     }
+    if (_wait_seg.empty())
+        _alarm.stop();
+    _abseqno = max(_abseqno, abs_ackno + window_size);
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
