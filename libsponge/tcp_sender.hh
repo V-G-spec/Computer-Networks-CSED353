@@ -8,8 +8,39 @@
 
 #include <functional>
 #include <queue>
+using namespace std;
 
 //! \brief The "sender" part of a TCP implementation.
+
+class Alarm {
+  private:
+    bool strtd;      // Has the alarm/timer started?
+    size_t limit;    // Expiration time
+    size_t counter;  // Current time (passed)
+  public:
+    Alarm(size_t RTO) : strtd(false), limit(RTO), counter(0) {}
+    // strtd = false;
+    // limit = RTO;
+    // counter = 0;
+    //}
+    void start(size_t RTO) {
+        strtd = true;
+        limit = RTO;
+        counter = 0;
+    }
+    void stop() {
+        strtd = 0;
+        counter = 0;
+    }
+    void tick(const size_t lastick) {
+        if (strtd == true)
+            counter += lastick;
+        else
+            return;
+    }
+    bool limit_reached() { return (strtd == true && counter >= limit); }
+    bool started() { return (strtd == true); }
+};
 
 //! Accepts a ByteStream, divides it up into segments and sends the
 //! segments, keeps track of which segments are still in-flight,
@@ -31,6 +62,16 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    Alarm _alarm;
+    bool _syn, _fin;    // syn/fin sent or not
+    uint64_t _abseqno;  // right window
+    uint64_t _win_size;
+    queue<TCPSegment> _wait_seg{};  // Segments in flight waiting for ACK
+    size_t _RTO;
+    uint64_t _rec_ack;   // Received ack
+    uint _cons_retrans;  // consecutive retransmission
+    uint64_t _in_flight;
 
   public:
     //! Initialize a TCPSender
