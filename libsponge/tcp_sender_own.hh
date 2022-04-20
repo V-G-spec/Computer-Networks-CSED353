@@ -8,8 +8,39 @@
 
 #include <functional>
 #include <queue>
+using namespace std;
 
 //! \brief The "sender" part of a TCP implementation.
+
+class Alarm {
+  private:
+    bool strtd;      // Has the alarm/timer started?
+    size_t limit;    // Expiration time
+    size_t counter;  // Current time (passed)
+  public:
+    Alarm(size_t RTO) : strtd(false), limit(RTO), counter(0) {}
+    // strtd = false;
+    // limit = RTO;
+    // counter = 0;
+    //}
+    void start(size_t RTO) {
+        strtd = true;
+        limit = RTO;
+        counter = 0;
+    }
+    void stop() {
+        strtd = 0;
+        counter = 0;
+    }
+    void tick(const size_t lastick) {
+        if (strtd == true)
+            counter += lastick;
+        else
+            return;
+    }
+    bool limit_reached() { return (strtd == true && counter >= limit); }
+    bool started() { return (strtd == true); }
+};
 
 //! Accepts a ByteStream, divides it up into segments and sends the
 //! segments, keeps track of which segments are still in-flight,
@@ -17,31 +48,6 @@
 //! segments if the retransmission timer expires.
 class TCPSender {
   private:
-    class RetransmissionTimer {
-      private:
-        size_t _retransmission_timeout;  // dynamic retransmission timeout
-        size_t _current_time{0};         // current time
-        bool _running{false};            // a state checking if the timer is running
-
-      public:
-        // Initialize a RetransmissionTimer : inaccessible outside the TCPSender class
-        RetransmissionTimer(const size_t initial_retransmission_timeout);
-        // A method called once TCPSender::tick method is called
-        void tick_timer(const size_t time_elapsed);
-        // reset _current_time to 0
-        void reset_timer();
-        // set _running to true
-        void start_timer();
-        // set _running to false
-        void stop_timer();
-        // reset RTO to the initial value
-        void init_retransmission_timeout(const size_t initial_retransmission_timeout);
-        // Double RTO
-        void exponential_backoff();
-        // Check if the timer is expired
-        bool timer_expired();
-    };
-
     //! our initial sequence number, the number for our SYN.
     WrappingInt32 _isn;
 
@@ -57,13 +63,15 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
-    uint64_t _absolute_ackno{0};                  // recent (valid) ackno received by ACK
-    std::queue<TCPSegment> _outstanding_queue{};  // queue storing all of the outstanding segments
-    size_t _num_consec_retransmission{0};         // the number of consecutive retransmissions
-    RetransmissionTimer _retransmission_timer;    // Retransmission Timer
-    uint16_t _window_size{1};                     // receiver's window size
-    size_t _bytes_in_flight{0};                   // value to be returned in bytes_in_flight method
-    bool _fin_segment_sent{false};                // whether the last segment of the entire stream has been sent
+    Alarm _alarm;
+    bool _syn, _fin;    // syn/fin sent or not
+    uint64_t _abseqno;  // right window
+    uint64_t _win_size;
+    queue<TCPSegment> _wait_seg{};  // Segments in flight waiting for ACK
+    size_t _RTO;
+    uint64_t _rec_ack;   // Received ack
+    uint _cons_retrans;  // consecutive retransmission
+    uint64_t _in_flight;
 
   public:
     //! Initialize a TCPSender
