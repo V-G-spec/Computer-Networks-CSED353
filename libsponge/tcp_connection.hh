@@ -28,8 +28,6 @@ class TCPConnection {
     void unclean_shutdown(bool rst);
     void real_send(bool syn);
 
-
-
   public:
     //! \name "Input" interface for the writer
     //!@{
