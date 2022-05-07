@@ -30,7 +30,7 @@ void NetworkInterface::send_helper() {
     uint32_t cnt = 0;
     for (std::pair<Address, InternetDatagram> iter : _dgram) {
         uint32_t tmp = iter.first.ipv4_numeric();
-        if (_mapStatus.find(tmp) != _mapStatus.end() && _mapStatus[tmp] >= 0) {
+        if ((_mapStatus.find(tmp) != _mapStatus.end()) && _mapStatus[tmp] >= 0) {
             send_datagram(iter.second, iter.first);
             _dgram.erase(_dgram.begin() + cnt);
         }
@@ -66,23 +66,22 @@ void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Addres
 
         std::pair<Address, InternetDatagram> tmp = make_pair(next_hop, dgram);
         _dgram.push_back(tmp);
-        _frames_out.push(frame);
         _mapStatus[next_hop_ip] = -1;
+	_frames_out.push(frame);
 
-    } else if (_mapStatus[next_hop_ip] < 0) {
+    } else if (_mapStatus[next_hop_ip] < 0 && _mapStatus.find(next_hop_ip)!=_mapStatus.end()) {
         std::pair<Address, InternetDatagram> tmp = make_pair(next_hop, dgram);
         _dgram.push_back(tmp);
         _frames_out.push(frame);
     }
-
+    return;
     // DUMMY_CODE(dgram, next_hop, next_hop_ip);
 }
 
 //! \param[in] frame the incoming Ethernet frame
 optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &frame) {
-    optional<InternetDatagram> ret = {};
-    if (frame.header().dst != _ethernet_address && frame.header().dst != ETHERNET_BROADCAST)
-        ;
+    optional<InternetDatagram> ret = nullopt;
+    if (frame.header().dst != _ethernet_address && frame.header().dst != ETHERNET_BROADCAST) return ret;
     else if (frame.header().type == EthernetHeader::TYPE_IPv4 && frame.header().dst == _ethernet_address) {
         InternetDatagram dgram;
         auto state = dgram.parse(Buffer(frame.payload()));
@@ -115,21 +114,25 @@ optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &fra
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void NetworkInterface::tick(const size_t ms_since_last_tick) {
-    if (_mapStatus.size() == 0) {
-        send_helper();
-        return;
-    }
+    //if (_mapStatus.size() == 0) {
+    //    send_helper();
+    //    return;
+    //}
     map<uint32_t, int>::iterator iter;
     for (iter = _mapStatus.begin(); iter != _mapStatus.end(); iter++) {
-        if (_mapStatus[iter->first] >= 0) {
+        if (_mapStatus.size()==0) {
+	    send_helper();
+	    return;
+	}
+	if (_mapStatus[iter->first] >= 0) {
             _mapStatus[iter->first] += ms_since_last_tick;
             if (_mapStatus[iter->first] >= MAX_CACHE_TIME) {
                 _mapStatus.erase(iter->first);
                 _addrMap.erase(iter->first);
             }
-        } else if (_mapStatus[iter->second] < 0) {
+        } else if (_mapStatus[iter->first] < 0) {
             _mapStatus[iter->first] -= ms_since_last_tick;
-            if (_mapStatus[iter->first] < MAX_WAITING_TIME)
+            if (_mapStatus[iter->first] < -1*MAX_WAITING_TIME)
                 _mapStatus.erase(iter->first);
         }
     }

@@ -17,31 +17,6 @@
 //! segments if the retransmission timer expires.
 class TCPSender {
   private:
-    class RetransmissionTimer {
-      private:
-        size_t _retransmission_timeout;  // dynamic retransmission timeout
-        size_t _current_time{0};         // current time
-        bool _running{false};            // a state checking if the timer is running
-
-      public:
-        // Initialize a RetransmissionTimer : inaccessible outside the TCPSender class
-        RetransmissionTimer(const size_t initial_retransmission_timeout);
-        // A method called once TCPSender::tick method is called
-        void tick_timer(const size_t time_elapsed);
-        // reset _current_time to 0
-        void reset_timer();
-        // set _running to true
-        void start_timer();
-        // set _running to false
-        void stop_timer();
-        // reset RTO to the initial value
-        void init_retransmission_timeout(const size_t initial_retransmission_timeout);
-        // Double RTO
-        void exponential_backoff();
-        // Check if the timer is expired
-        bool timer_expired();
-    };
-
     //! our initial sequence number, the number for our SYN.
     WrappingInt32 _isn;
 
@@ -57,13 +32,20 @@ class TCPSender {
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
 
-    uint64_t _absolute_ackno{0};                  // recent (valid) ackno received by ACK
-    std::queue<TCPSegment> _outstanding_queue{};  // queue storing all of the outstanding segments
-    size_t _num_consec_retransmission{0};         // the number of consecutive retransmissions
-    RetransmissionTimer _retransmission_timer;    // Retransmission Timer
-    uint16_t _window_size{1};                     // receiver's window size
-    size_t _bytes_in_flight{0};                   // value to be returned in bytes_in_flight method
-    bool _fin_segment_sent{false};                // whether the last segment of the entire stream has been sent
+    uint64_t ackno_{0};
+    bool syn_{false};
+    bool syn_acked{false};
+    bool fin_{false};
+    uint16_t rwnd{1};
+    uint64_t _bytes_in_flight{0};
+    std::queue<TCPSegment> outstanding_segments{};
+
+    bool if_timer_running{false};
+    unsigned int time_elapsed{0};
+    unsigned int cur_RTO;
+    unsigned int consecutive_retransmissions_{0};
+
+    void send_segment(TCPSegment &seg);
 
   public:
     //! Initialize a TCPSender
