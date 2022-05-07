@@ -1,4 +1,5 @@
-#include "socket.hh"
+//#include "socket.hh"
+#include "tcp_sponge_socket.hh"
 #include "util.hh"
 
 #include <cstdlib>
@@ -8,7 +9,8 @@ using namespace std;
 
 void get_URL(const string &host, const string &path) {
     // Your code here.
-    TCPSocket s1;
+    FullStackSocket s1;
+    // TCPSocket s1;
     s1.connect(Address(host, "http"));
     // You will need to connect to the "http" service on
     // the computer whose name is in the "host" string,
@@ -20,6 +22,7 @@ void get_URL(const string &host, const string &path) {
     while (s1.eof() == false) {
         cout << s1.read();
     }
+    s1.wait_until_closed();
     s1.close();
 
     // cerr << "Function called: get_URL(" << host << ", " << path << ").\n";

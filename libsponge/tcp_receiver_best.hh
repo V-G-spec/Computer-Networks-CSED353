@@ -23,8 +23,9 @@ class TCPReceiver {
     WrappingInt32 _isn = WrappingInt32(0);
     bool _is_received_syn = false;
     bool _is_received_fin = false;
-    
+
     size_t _get_unassm_base() const { return _reassembler.stream_out().bytes_written(); };
+
   public:
     //! \brief Construct a TCP receiver
     //!
