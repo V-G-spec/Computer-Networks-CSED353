@@ -13,29 +13,18 @@
 
 // You will need to add private members to the class declaration in `network_interface.hh`
 
-template <typename... Targs>
-void DUMMY_CODE(Targs &&... /* unused */) {}
-
 using namespace std;
 
 //! \param[in] ethernet_address Ethernet (what ARP calls "hardware") address of the interface
 //! \param[in] ip_address IP (what ARP calls "protocol") address of the interface
 NetworkInterface::NetworkInterface(const EthernetAddress &ethernet_address, const Address &ip_address)
-    : _ethernet_address(ethernet_address), _ip_address(ip_address) {
+    : _ethernet_address(ethernet_address)
+    , _ip_address(ip_address)
+    , outstanding_message_map{}
+    , forwarding_table{}
+    , unsent_datagram_map{} {
     cerr << "DEBUG: Network interface has Ethernet address " << to_string(_ethernet_address) << " and IP address "
          << ip_address.ip() << "\n";
-}
-
-void NetworkInterface::send_helper() {
-    uint32_t cnt = 0;
-    for (std::pair<Address, InternetDatagram> iter : _dgram) {
-        uint32_t tmp = iter.first.ipv4_numeric();
-        if ((_mapStatus.find(tmp) != _mapStatus.end()) && _mapStatus[tmp] >= 0) {
-            send_datagram(iter.second, iter.first);
-            _dgram.erase(_dgram.begin() + cnt);
-        }
-        cnt += 1;
-    }
 }
 
 //! \param[in] dgram the IPv4 datagram to be sent
@@ -44,98 +33,132 @@ void NetworkInterface::send_helper() {
 void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Address &next_hop) {
     // convert IP address of next hop to raw 32-bit representation (used in ARP header)
     const uint32_t next_hop_ip = next_hop.ipv4_numeric();
-    EthernetFrame frame;
-    if (_addrMap.find(next_hop_ip) != _addrMap.end()) {  // Directly send frame
-        frame.header().type = EthernetHeader::TYPE_IPv4;
-        frame.header().src = _ethernet_address;
-        frame.header().dst = _addrMap[next_hop_ip];
-        frame.payload() = dgram.serialize();
-        _frames_out.push(frame);
-    } else if (_mapStatus.find(next_hop_ip) == _mapStatus.end()) {  // Send ARP request
-        ARPMessage arp;
+    
+    auto forwardingTableEntity = forwarding_table.find(next_hop_ip);
+    if (forwarding_table.end() != forwardingTableEntity) {
+        EthernetFrame ethernetFrame;
+        EthernetHeader ethernetHeader;
 
-        arp.opcode = ARPMessage::OPCODE_REQUEST;
-        arp.sender_ethernet_address = _ethernet_address;
-        arp.sender_ip_address = _ip_address.ipv4_numeric();
-        arp.target_ethernet_address = EthernetAddress{0};  // Can also just remove this
+        ethernetHeader.src = _ethernet_address;
+        ethernetHeader.dst = forwardingTableEntity->second.ethernet_address;
+        ethernetHeader.type = EthernetHeader::TYPE_IPv4;
 
-        frame.payload() = arp.serialize();
-        frame.header().type = EthernetHeader::TYPE_IPv4;
-        frame.header().src = _ethernet_address;
-        frame.header().dst = _addrMap[next_hop_ip];
+        ethernetFrame.payload() = dgram.serialize();
+        ethernetFrame.header() = ethernetHeader;
 
-        std::pair<Address, InternetDatagram> tmp = make_pair(next_hop, dgram);
-        _dgram.push_back(tmp);
-        _mapStatus[next_hop_ip] = -1;
-        _frames_out.push(frame);
-
-    } else if (_mapStatus[next_hop_ip] < 0 && _mapStatus.find(next_hop_ip) != _mapStatus.end()) {
-        std::pair<Address, InternetDatagram> tmp = make_pair(next_hop, dgram);
-        _dgram.push_back(tmp);
-        _frames_out.push(frame);
+        _frames_out.push(ethernetFrame);
+        return;
     }
-    return;
-    // DUMMY_CODE(dgram, next_hop, next_hop_ip);
+
+    auto internet_datagram = unsent_datagram_map.find(next_hop_ip);
+    if (internet_datagram != unsent_datagram_map.end()) {
+        internet_datagram->second.push(dgram);
+    } else {
+        queue<InternetDatagram> internet_datagram_queue;
+        internet_datagram_queue.push(dgram);
+        unsent_datagram_map.insert(std::pair<uint32_t, queue<InternetDatagram>>(next_hop_ip, internet_datagram_queue));
+    }
+
+    auto outstanding_message = outstanding_message_map.find(next_hop_ip);
+    if (outstanding_message != outstanding_message_map.end()) {
+        return;
+    }
+
+    outstanding_message_map.insert(std::pair<uint32_t, size_t>(next_hop_ip, 0));
+
+    ARPMessage arp_message;
+    arp_message.sender_ethernet_address = _ethernet_address;
+    arp_message.sender_ip_address = _ip_address.ipv4_numeric();
+    arp_message.opcode = arp_message.OPCODE_REQUEST;
+    arp_message.target_ethernet_address = ETHERNET_TARGET_ADDRESS;
+    arp_message.target_ip_address = next_hop_ip;
+
+    EthernetHeader hdr;
+    hdr.type = EthernetHeader::TYPE_ARP;
+    hdr.dst = ETHERNET_BROADCAST;
+    hdr.src = _ethernet_address;
+
+    EthernetFrame frame;
+    frame.header() = hdr;
+    frame.payload() = arp_message.serialize();
+    _frames_out.push(frame);
 }
 
 //! \param[in] frame the incoming Ethernet frame
 optional<InternetDatagram> NetworkInterface::recv_frame(const EthernetFrame &frame) {
-    optional<InternetDatagram> ret = nullopt;
-    if (frame.header().dst != _ethernet_address && frame.header().dst != ETHERNET_BROADCAST)
-        return ret;
-    else if (frame.header().type == EthernetHeader::TYPE_IPv4 && frame.header().dst == _ethernet_address) {
-        InternetDatagram dgram;
-        auto state = dgram.parse(Buffer(frame.payload()));
-        if (state == ParseResult::NoError) {
-            ret = dgram;
-        }
-    } else if (frame.header().type == EthernetHeader::TYPE_ARP) {
-        ARPMessage arp;
-        if (arp.parse(Buffer(frame.payload())) == ParseResult::NoError) {
-            _addrMap[arp.sender_ip_address] = arp.sender_ethernet_address;
-            _mapStatus[arp.sender_ip_address] = 0;
-        }
-        if (arp.opcode == ARPMessage::OPCODE_REQUEST && arp.target_ip_address == _ip_address.ipv4_numeric()) {
-            arp.sender_ethernet_address = _ethernet_address;
-            arp.sender_ip_address = _ip_address.ipv4_numeric();
-            arp.opcode = ARPMessage::OPCODE_REPLY;
-            arp.target_ethernet_address = arp.sender_ethernet_address;
-            arp.target_ip_address = arp.sender_ip_address;
-            EthernetFrame back;
-            back.header().type = EthernetHeader::TYPE_ARP;
-            back.header().src = _ethernet_address;
-            back.header().dst = arp.target_ethernet_address;
-            _frames_out.push(back);
-        }
+    if (frame.header().dst != ETHERNET_BROADCAST && frame.header().dst != _ethernet_address) {
+        return {};
     }
-    send_helper();
-    // DUMMY_CODE(frame);
-    return ret;
+
+    Buffer payload_single = frame.payload().concatenate();
+    if (frame.header().type == EthernetHeader::TYPE_ARP) {
+        ARPMessage arp_message;
+
+        if (arp_message.parse(payload_single) != ParseResult::NoError ||
+            arp_message.target_ip_address != _ip_address.ipv4_numeric()) {
+            return {};
+        }
+        ForwardingTableEntity forwarding_table_entity = {arp_message.sender_ethernet_address, 0};
+        forwarding_table.insert(
+            std::pair<uint32_t, ForwardingTableEntity>(arp_message.sender_ip_address, forwarding_table_entity));
+
+        auto unsent_datagram = unsent_datagram_map.find(arp_message.sender_ip_address);
+        if (unsent_datagram != unsent_datagram_map.end()) {
+            while (!unsent_datagram->second.empty()) {
+                send_datagram(unsent_datagram->second.front(), Address::from_ipv4_numeric(unsent_datagram->first));
+                unsent_datagram->second.pop();
+            }
+        }
+
+        if (arp_message.opcode != arp_message.OPCODE_REQUEST) {
+            outstanding_message_map.erase(arp_message.sender_ip_address);
+        } else {
+            ARPMessage reply_arp_message;
+            reply_arp_message.opcode = reply_arp_message.OPCODE_REPLY;
+            reply_arp_message.sender_ethernet_address = _ethernet_address;
+            reply_arp_message.sender_ip_address = _ip_address.ipv4_numeric();
+            reply_arp_message.target_ethernet_address = arp_message.sender_ethernet_address;
+            reply_arp_message.target_ip_address = arp_message.sender_ip_address;
+
+            EthernetHeader reply_ethernet_header;
+            reply_ethernet_header.dst = arp_message.sender_ethernet_address;
+            reply_ethernet_header.type = EthernetHeader::TYPE_ARP;
+            reply_ethernet_header.src = _ethernet_address;
+
+            EthernetFrame reply_ethernet_frame;
+            reply_ethernet_frame.header() = reply_ethernet_header;
+            reply_ethernet_frame.payload() = reply_arp_message.serialize();
+
+            _frames_out.push(reply_ethernet_frame);
+        }
+    } else if (frame.header().type == EthernetHeader::TYPE_IPv4) {
+        InternetDatagram internet_datagram;
+        if (internet_datagram.parse(payload_single) != ParseResult::NoError) {
+            return {};
+        }
+
+        return internet_datagram;
+    }
+    return {};
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
 void NetworkInterface::tick(const size_t ms_since_last_tick) {
-    // if (_mapStatus.size() == 0) {
-    //    send_helper();
-    //    return;
-    //}
-    map<uint32_t, int>::iterator iter;
-    for (iter = _mapStatus.begin(); iter != _mapStatus.end(); iter++) {
-        if (_mapStatus.size() == 0) {
-            send_helper();
-            return;
-        }
-        if (_mapStatus[iter->first] >= 0) {
-            _mapStatus[iter->first] += ms_since_last_tick;
-            if (_mapStatus[iter->first] >= MAX_CACHE_TIME) {
-                _mapStatus.erase(iter->first);
-                _addrMap.erase(iter->first);
-            }
-        } else if (_mapStatus[iter->first] < 0) {
-            _mapStatus[iter->first] -= ms_since_last_tick;
-            if (_mapStatus[iter->first] < -1 * MAX_WAITING_TIME)
-                _mapStatus.erase(iter->first);
+    for (auto it = outstanding_message_map.begin(); it != outstanding_message_map.end();) {
+        if (it->second + ms_since_last_tick <= 5000) {
+            it->second += ms_since_last_tick;
+            it++;
+        } else {
+            it = outstanding_message_map.erase(it);
         }
     }
-    send_helper();
+
+    for (auto it = forwarding_table.begin(); it != forwarding_table.end();) {
+        if (it->second.time_elapsed + ms_since_last_tick <= 30000) {
+            it->second.time_elapsed += ms_since_last_tick;
+            it++;
+        } else {
+            it = forwarding_table.erase(it);
+        }
+    }
 }
