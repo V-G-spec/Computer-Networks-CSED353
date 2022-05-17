@@ -33,7 +33,7 @@ NetworkInterface::NetworkInterface(const EthernetAddress &ethernet_address, cons
 void NetworkInterface::send_datagram(const InternetDatagram &dgram, const Address &next_hop) {
     // convert IP address of next hop to raw 32-bit representation (used in ARP header)
     const uint32_t next_hop_ip = next_hop.ipv4_numeric();
-    
+
     auto forwardingTableEntity = forwarding_table.find(next_hop_ip);
     if (forwarding_table.end() != forwardingTableEntity) {
         EthernetFrame ethernetFrame;

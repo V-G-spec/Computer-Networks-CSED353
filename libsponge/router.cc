@@ -30,34 +30,38 @@ void Router::add_route(const uint32_t route_prefix,
          << " => " << (next_hop.has_value() ? next_hop->ip() : "(direct)") << " on interface " << interface_num << "\n";
 
     _routes.push_back(routeEntry(route_prefix, prefix_length, next_hop, interface_num));
-    //DUMMY_CODE(route_prefix, prefix_length, next_hop, interface_num);
+    // DUMMY_CODE(route_prefix, prefix_length, next_hop, interface_num);
     // Your code here.
 }
 
 //! \param[in] dgram The datagram to be routed
 void Router::route_one_datagram(InternetDatagram &dgram) {
     if (dgram.header().ttl > 1) {
-	dgram.header().ttl--;
-	uint32_t dest = dgram.header().dst;
-	int idx = -1;
-	int longest=-1;
-	int cnt=0;
-	for (routeEntry route : _routes){
-	    auto mask = route._prefix_length == 0 ? 0 : numeric_limits<int>::min() >> (route._prefix_length - 1);
-	    if ((mask & dest) == (mask & route._route_prefix)){
-		if (longest < route._prefix_length) {
-		    idx = cnt;
-		    longest = route._prefix_length;
-		}
-	    }
-	    cnt++;
-	}
-	if (idx>=0){
-	    if (_routes[idx]._next_hop.has_value()) interface(_routes[idx]._interface_num).send_datagram(dgram, _routes[idx]._next_hop->ip());
-	    else interface(_routes[idx]._interface_num).send_datagram(dgram, Address::from_ipv4_numeric(dgram.header().dst));
-	} else dgram.header().ttl++;
+        dgram.header().ttl--;
+        uint32_t dest = dgram.header().dst;
+        int idx = -1;
+        int longest = -1;
+        int cnt = 0;
+        for (routeEntry route : _routes) {
+            auto mask = route._prefix_length == 0 ? 0 : numeric_limits<int>::min() >> (route._prefix_length - 1);
+            if ((mask & dest) == (mask & route._route_prefix)) {
+                if (longest < route._prefix_length) {
+                    idx = cnt;
+                    longest = route._prefix_length;
+                }
+            }
+            cnt++;
+        }
+        if (idx >= 0) {
+            if (_routes[idx]._next_hop.has_value())
+                interface(_routes[idx]._interface_num).send_datagram(dgram, _routes[idx]._next_hop->ip());
+            else
+                interface(_routes[idx]._interface_num)
+                    .send_datagram(dgram, Address::from_ipv4_numeric(dgram.header().dst));
+        } else
+            dgram.header().ttl++;
     }
-    //DUMMY_CODE(dgram);
+    // DUMMY_CODE(dgram);
     // Your code here.
 }
 
