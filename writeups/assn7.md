@@ -32,7 +32,7 @@ Yes, we could u successfully transfer a one-megabyte file between our two implem
 No code changes were necessary at all
 
 Creative portion (optional):
-[]
+I rick-rolled my team mate and he ALMOST rick-rolled me. Anything he says is a lie. Anything he says about me lying is also a lie. 
 
 Other remarks:
 []
